@@ -1,0 +1,1 @@
+This demonstrates the minimum required to compile something.

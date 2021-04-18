@@ -1,0 +1,46 @@
+# Add any directories, files, or patterns you don't want to be tracked by version control
+.DS_Store
+*.xcuserdatad
+*.xccheckout
+*.xcuserstate
+*.tlog
+*.db
+*.opendb
+*.idb
+# User-specific files
+*.suo
+*.user
+*.sln.docstates
+# Visual C++ cache files
+ipch/
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+*.opendb
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+.vs
+*.sln
+*.vcxproj
+*.filters
+cmake-build*/
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
