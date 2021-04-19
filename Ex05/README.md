@@ -1,1 +1,1 @@
-This demonstrates how to link against zlib
+This demonstrates using cppcoro
