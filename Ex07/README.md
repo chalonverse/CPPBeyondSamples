@@ -1,1 +1,0 @@
-This demonstrates how to set different compiler flags based on platform

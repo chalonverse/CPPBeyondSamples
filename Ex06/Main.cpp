@@ -1,9 +1,10 @@
-#include <iostream>
-#include <catch.hpp>
+// We import the module instead of including
+import ModuleTest;
 
 int main()
 {
-	std::cout << "Hello, C++ Catch world!\n";
+	ModuleTest::TryTestOutput("Hello");
+	ModuleTest::TryTestOutput("Modules!");
 
 	return 0;
 }
