@@ -1,70 +1,108 @@
 #include <iostream>
-#include <cppcoro/generator.hpp>
-#include <cppcoro/task.hpp>
-#include <cppcoro/async_manual_reset_event.hpp>
-#include <cppcoro/sync_wait.hpp>
-#include <cppcoro/static_thread_pool.hpp>
-#include <cppcoro/when_all.hpp>
+#include <coro/coro.hpp>
 #include <future>
 #include <vector>
+#include <generator>
 
-// This is a coroutine that each time it's called will return the next number
-cppcoro::generator<int> GetNextNum()
+void GeneratorExample()
 {
-	int num = 0;
-	while (true)
+	auto gen = []() -> std::generator<uint64_t>{
+		uint64_t i = 0;
+		while (true)
+		{
+			co_yield i;
+			++i;
+		}
+	};
+
+	// Generate the next number until its greater than count to.
+	for (auto val : gen())
 	{
-		co_yield num++;
+		std::cout << val << ", ";
+
+		if (val >= 100)
+		{
+			break;
+		}
 	}
 }
 
-// This is an event that can be waited on by multiple coroutines
-cppcoro::async_manual_reset_event event;
-
-cppcoro::task<> task1()
+void TaskExample()
 {
-	// Wait until the event is set
-	co_await event;
-	std::cout << "task1 executing!\n";
-	co_return;
-}
+	// Create a task that awaits the doubling of its given value and
+// then returns the result after adding 5.
+	auto double_and_add_5_task = [](uint64_t input) -> coro::task<uint64_t>{
+		// Task that takes a value and doubles it.
+		auto double_task = [](uint64_t x) -> coro::task<uint64_t> { co_return x * 2; };
 
-cppcoro::task<> task2()
-{
-	co_await event;
-	std::cout << "task2 executing!\n";
-	co_return;
-}
+		auto doubled = co_await double_task(input);
+		co_return doubled + 5;
+	};
 
-cppcoro::task<> setEventTask()
-{
-	event.set();
-	co_return;
-}
+	auto output = coro::sync_wait(double_and_add_5_task(2));
+	std::cout << "Task1 output = " << output << "\n";
 
-// This handles scheduling the tasks
-cppcoro::task<> scheduler()
-{
-	// Run these three coroutines cooperatively
-	co_await cppcoro::when_all(task1(), task2(), setEventTask());
+	struct expensive_struct
+	{
+		std::string              id{};
+		std::vector<std::string> records{};
 
-	co_return;
+		expensive_struct() = default;
+		~expensive_struct() = default;
+
+		// Explicitly delete copy constructor and copy assign, force only moves!
+		// While the default move constructors will work for this struct the example
+		// inserts explicit print statements to show the task is moving the value
+		// out correctly.
+		expensive_struct(const expensive_struct&) = delete;
+		auto operator=(const expensive_struct&)->expensive_struct & = delete;
+
+		expensive_struct(expensive_struct&& other) : id(std::move(other.id)), records(std::move(other.records))
+		{
+			std::cout << "expensive_struct() move constructor called\n";
+		}
+		auto operator=(expensive_struct&& other) -> expensive_struct&
+		{
+			if (std::addressof(other) != this)
+			{
+				id = std::move(other.id);
+				records = std::move(other.records);
+			}
+			std::cout << "expensive_struct() move assignment called\n";
+			return *this;
+		}
+	};
+
+	// Create a very large object and return it by moving the value so the
+	// contents do not have to be copied out.
+	auto move_output_task = []() -> coro::task<expensive_struct>
+		{
+			expensive_struct data{};
+			data.id = "12345678-1234-5678-9012-123456781234";
+			for (size_t i = 10'000; i < 100'000; ++i)
+			{
+				data.records.emplace_back(std::to_string(i));
+			}
+
+			// Because the struct only has move contructors it will be forced to use
+			// them, no need to explicitly std::move(data).
+			co_return data;
+		};
+
+	auto data = coro::sync_wait(move_output_task());
+	std::cout << data.id << " has " << data.records.size() << " records.\n";
+
+	// std::unique_ptr<T> can also be used to return a larger object.
+	auto unique_ptr_task = []() -> coro::task<std::unique_ptr<uint64_t>> { co_return std::make_unique<uint64_t>(42); };
+
+	auto answer_to_everything = coro::sync_wait(unique_ptr_task());
+	if (answer_to_everything != nullptr)
+	{
+		std::cout << "Answer to everything = " << *answer_to_everything << "\n";
+	}
 }
 
 int main()
 {
-	// This saves the state of the coroutine
-	auto generator = GetNextNum();
-	auto iter = generator.begin();
-	for (int i = 0; i < 10; i++)
-	{
-		// Every time we *iter it'll lazily compute the value
-		std::cout << *iter << "\n";
-		// This updates the coroutine state
-		iter++;
-	}
-
-	cppcoro::sync_wait(scheduler());
-
 	return 0;
 }

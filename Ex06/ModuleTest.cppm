@@ -2,8 +2,11 @@
 export module ModuleTest;
 
 // Import any required other modules here
-import std.iostream;
-import std.string;
+// import std is STILL experimental so just include instead
+// import std.iostream;
+// import std.string;
+#include <iostream>
+#include <string>
 
 // Everything need to be in the module namespace
 namespace ModuleTest
